@@ -17,7 +17,7 @@ Neovim 0.7.0+
 Using `packer`
 
 ```lua
-use { "ellisonleao/dotenv.nvim" }
+use { "julionadal/dotenv.nvim" }
 ```
 
 # Basic Usage
@@ -34,6 +34,8 @@ Additional settings are:
 require('dotenv').setup({
   enable_on_load = true, -- will load your .env file upon loading a buffer
   verbose = false, -- show error notification if .env file is not found and if .env is loaded
+  filename = '.env', -- set filename for on load
+  on_load_only_cwd = true, -- load only from current working directrory
 })
 ```
 
