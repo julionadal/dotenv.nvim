@@ -6,10 +6,15 @@ local dotenv = {}
 
 dotenv.config = {
   event = 'VimEnter',
+  event_group = 'Dotenv',
+  event_found = 'DotenvFound',
+  event_not_found = 'DotenvNotFound',
   enable_on_load = false,
   verbose = false,
   filename = '.env',
   on_load_only_cwd = true,
+  cwd_var_name = 'ENV_DIR',
+  expanded_cwd_var_name = 'EXPANDED_ENV_DIR',
 }
 
 local function notify(msg, level)
@@ -71,6 +76,8 @@ end
 local function load(file)
   if file == nil then
     if dotenv.config.on_load_only_cwd == true then
+      vim.env[dotenv.config.cwd_var_name] = vim.fn.getcwd()
+      vim.env[dotenv.config.expanded_cwd_var_name] = vim.fn.expand(vim.fn.getcwd())
       file = dotenv.config.filename
     else
       file = get_env_file()
@@ -80,11 +87,19 @@ local function load(file)
   local ok, data = pcall(read_file, file)
   if not ok then
     notify(dotenv.config.filename .. ' file not found', 'ERROR')
+    vim.api.nvim_exec_autocmds('User', {
+      pattern = dotenv.config.event_not_found,
+      modeline = false,
+    })
     return
   end
 
   parse_data(data)
   notify(dotenv.config.filename .. ' file loaded')
+  vim.api.nvim_exec_autocmds('User', {
+    pattern = dotenv.config.event_found,
+    modeline = false,
+  })
 end
 
 dotenv.setup = function(args)
@@ -98,8 +113,22 @@ dotenv.setup = function(args)
   end, { nargs = 1 })
 
   if dotenv.config.enable_on_load then
-    local group = vim.api.nvim_create_augroup('Dotenv', { clear = true })
+    local group = vim.api.nvim_create_augroup(dotenv.config.event_group, { clear = true })
     vim.api.nvim_create_autocmd(dotenv.config.event, { group = group, pattern = '*', callback = dotenv.autocmd })
+    vim.api.nvim_create_autocmd('User', {
+      --group = group,
+      pattern = dotenv.config.event_found,
+      callback = function()
+        print('Event: ' .. dotenv.config.event_found)
+      end,
+    })
+    vim.api.nvim_create_autocmd('User', {
+      --group = group,
+      pattern = dotenv.config.event_not_found,
+      callback = function()
+        print('Event: ' .. dotenv.config.event_not_found)
+      end,
+    })
   end
 end
 
